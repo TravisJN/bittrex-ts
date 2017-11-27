@@ -1,0 +1,49 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+th, td {
+  padding: 10px;
+}
+
+table {
+  margin-left: auto;
+  margin-right: auto;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid blue;
+}
+
+tr { 
+  border: solid;
+  border-width: 1px 0;
+}
+
+tbody td {
+  text-align: right;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #d5ebf3;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #ceddff;
+}
+
+.div-btc-price {
+  padding: 10px;
+  height: 50px;
+}
+
+.h5-btc-price {
+  color: blue;
+}
+
+.img-loading-btc-price {
+  height: 50px;
+  width: 50px;
+  float: none;
+}
