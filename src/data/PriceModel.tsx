@@ -1,17 +1,23 @@
 //var _ = require('underscore');
 import * as _ from 'underscore';
 
-export interface IPriceModelData {
+export interface PriceModelData {
     balances: any[];
     getBTCPrice: any[];
     marketSummaries: any[];
     BTCPrice: any;
 }
+
+export interface ResponseJson {
+    success: boolean;
+    message: string;
+}
+
 // Simple data store and API request handler
 class PriceModel {
     
     baseUrl = 'http://localhost:8080';
-    private mData: IPriceModelData = {
+    private mData: PriceModelData = {
         balances: [],
         getBTCPrice: [{
             Last: 0
@@ -59,6 +65,14 @@ class PriceModel {
             queryParams: {
                 market: 'usdt-btc'
             }
+        },
+        buyLimit: {
+            path: '/market/buylimit',
+            queryParams: {
+                market: '',
+                quantity: '',
+                rate: ''
+            }
         }
     }
 
@@ -90,6 +104,17 @@ class PriceModel {
         }
     }
 
+    get btcSum(): string {
+        let sum = 0;
+
+        if (this.mData.balances && this.mData.balances.length) {
+
+            return this.mData.balances.reduce((aSum, aCurrency) => {
+                return Number(aSum) + Number(this.getBTCValue(aCurrency.Currency));
+            }, sum).toFixed(2);
+        }
+    }
+
     getLastPrice(aSymbol) {
         // Traverse the marketsummary data to find a match
         var marketObject = this.mData.marketSummaries.find((aMarket) => {
@@ -101,24 +126,23 @@ class PriceModel {
         }
     }
 
-    getBTCValue(aSymbol) {
+    getBTCValue(aSymbol): string {
         var currentBalance,
             lastPrice = this.getLastPrice(aSymbol);
-        
-            
-            currentBalance = this.mData.balances.find((aBalance) => {
+
+             currentBalance = this.mData.balances.find((aBalance) => {
                 return aBalance.Currency === aSymbol;
             });
             
             if (aSymbol === 'BTC') {
                 return currentBalance.Balance;
             }
-
+        
         return (currentBalance.Balance * lastPrice).toFixed(8);
     }
 
     getDollarValue(aSymbol) {
-        var currencyBTCValue = this.getBTCValue(aSymbol);
+        var currencyBTCValue = Number(this.getBTCValue(aSymbol));
 
         return (currencyBTCValue * this.currentBTCPrice).toFixed(2);
     }
@@ -130,6 +154,10 @@ class PriceModel {
         switch(aEndPointKey) {
             case 'balances':
                 parsedData = body.filter((aCurrency) => {
+                    // BTC-BTS balance isn't currently returned in the marketSummaries call so we'll just filter it out here
+                    if (aCurrency.Currency === 'BTS') {
+                        return false;
+                    }
                     return aCurrency.Balance > 0;
                 });
                 break;
@@ -173,6 +201,10 @@ class PriceModel {
      * @param {string} aEndPoint The endpoint key used for mapping the response data correctly
      */
     makeRequest(aUrl, aEndPoint) {
+        if (aEndPoint === 'buyLimit') {
+            console.log(aUrl);
+            return;
+        } 
         return fetch(aUrl, {  
             method: 'GET',
             headers: {

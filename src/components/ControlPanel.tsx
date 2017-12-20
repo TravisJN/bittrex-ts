@@ -2,8 +2,7 @@ import * as React from 'react';
 
 
 export interface Props {
-    // this is also in Display.tsx but I didn't know how to reference it here    
-    buttonClicked: any;    
+    buttonClicked: (aEvent: any, aButton: any) => void;    
 }
 
 /**
@@ -24,31 +23,33 @@ class ControlPanel extends React.Component<Props, any> {
         }
     ]
 
-    public buttonClicked: any;
-
     constructor(props: Props) {
         super(props);
-
-        this.buttonClicked = props.buttonClicked;
     }
 
     public setState(a:any, b:any) {
         super.setState(a, b);
     }
 
-    getButtons() {
+    private getButtons() {
         return this.buttons.map((aButton) => {
-            return <button key={aButton.endPointKey} type="button" onClick={this.getButtonCallback(aButton)}>{aButton.label}</button>
+            let buttonArgs = {
+                key: aButton.endPointKey,
+                tyoe: "button",
+                onClick: this.getButtonCallback(aButton)
+            };
+
+            return <button {...buttonArgs}>{aButton.label}</button>
         });
     }
 
-    getButtonCallback(aButtonObj: any) {
+    private getButtonCallback(aButtonObj: any) {
         return (event) => {
             this.props.buttonClicked(event, aButtonObj);
         }
     }
 
-    render() {
+    public render() {
         return (
             <div className="div-control-panel">
                 {this.getButtons()}

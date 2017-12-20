@@ -1,12 +1,13 @@
 import React from 'react';
+import PriceModel from '../data/PriceModel';
 
 export interface Props {
 
 }
 
-class PriceDisplay extends React.Component<any, any>{
+class BalancesDisplay extends React.Component<any, any>{
 
-    private mModel: any;
+    private mModel: PriceModel;
 
     constructor(props) {
         super(props);
@@ -18,15 +19,20 @@ class PriceDisplay extends React.Component<any, any>{
         return this.props.balances.map((aCurrency) => {
                     let symbol = aCurrency.Currency,
                         balance = aCurrency.Balance.toFixed(4);
-
-                    return (
-                        <tr key={aCurrency.Currency}>
-                            <td>{aCurrency.Currency}</td>
-                            <td>{balance}</td>
-                            <td>{this.mModel.getBTCValue(aCurrency.Currency)}</td>
-                            <td>{this.mModel.getDollarValue(aCurrency.Currency)}</td>
-                        </tr>
-                    )
+                    
+                    if (symbol === 'BTS') {
+                        return;
+                    }
+                    if (symbol && balance) {
+                        return (
+                            <tr key={aCurrency.Currency}>
+                                <td className="balances-table__ticker-symbol-column">{aCurrency.Currency}</td>
+                                <td>{balance}</td>
+                                <td>{this.mModel.getBTCValue(aCurrency.Currency)}</td>
+                                <td>{this.mModel.getDollarValue(aCurrency.Currency)}</td>
+                            </tr>
+                        )
+                    }
                 });
     }
 
@@ -35,7 +41,7 @@ class PriceDisplay extends React.Component<any, any>{
             <tr className="tr-sum">
                 <td> </td>
                 <td> </td>
-                <td> </td>
+                <td>{this.mModel.btcSum}</td>
                 <td>{this.mModel.dollarSum}</td>
             </tr>
         )
@@ -43,7 +49,7 @@ class PriceDisplay extends React.Component<any, any>{
 
     render() {
         return( 
-            <div>
+            <div className="main__balances-table">
                 <table>
                     <thead>
                         <tr>
@@ -63,4 +69,4 @@ class PriceDisplay extends React.Component<any, any>{
     }
 }
 
-export default PriceDisplay;
+export default BalancesDisplay;
