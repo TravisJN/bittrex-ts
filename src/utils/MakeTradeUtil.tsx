@@ -5,6 +5,7 @@ interface MarketOrderOptions {
     market: string;
     quantity: number;
     rate: number;
+    trailingStop: number;
 }
 
 class MakeTradeUtil {
@@ -15,8 +16,9 @@ class MakeTradeUtil {
    }
 
    public buyLimit(aOptions: MarketOrderOptions): void {
-       console.log('Buy Limit!', aOptions);
-        // this.mModel.fetchData('buyLimit', aOptions);
+        console.log('Buy Limit!', aOptions);
+        this.setTrailingStop(aOptions);
+        this.mModel.fetchData('buyLimit', aOptions);
    }
 
    public sellLimit(aOptions: MarketOrderOptions): void {
@@ -24,6 +26,13 @@ class MakeTradeUtil {
         //this.mModel.fetchData('sellLimit', aOptions);
    }
 
+   private setTrailingStop(aOptions: MarketOrderOptions) {
+       // Need to save to a db/json file for persistence
+       // Write the current market price on an interval
+       // Check if current market price is more than x% below high
+       // sell if stop loss is hit or
+       // check if latest value is higher than the current high and adjust
+   }
 }
 
 export default MakeTradeUtil;

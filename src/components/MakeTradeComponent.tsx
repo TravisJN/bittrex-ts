@@ -10,6 +10,7 @@ export interface State {
     market: string;
     quantity: number;
     rate: number;
+    trailingStop;
 }
 
 class MakeTradeComponent extends React.Component<Props, object>{
@@ -20,7 +21,8 @@ class MakeTradeComponent extends React.Component<Props, object>{
     public state: State = {
                             market: "",
                             quantity: 0,
-                            rate: 0
+                            rate: 0,
+                            trailingStop: 0
                         }
 
     constructor(props: Props) {
@@ -43,7 +45,7 @@ class MakeTradeComponent extends React.Component<Props, object>{
 
     private handleBuy(aEvent: React.FormEvent<HTMLFormElement>): void {
         aEvent.preventDefault();
-        this.mTradeUtil.buyLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate});
+        this.mTradeUtil.buyLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate, trailingStop: this.state.trailingStop});
     }
 
     private handleSell(aEvent: React.FormEvent<HTMLFormElement>): void {
@@ -59,21 +61,30 @@ class MakeTradeComponent extends React.Component<Props, object>{
         return (
             <div className="make-trade__container">
                 <form className="make-trade__form">
+                    <label htmlFor="market">Market</label>
                     <input  className="make-trade__input"
                             type="text" 
                             name="market" 
                             id="market" 
                             value={this.state.market} 
                             onChange={this.handleChange.bind(this)} />
+                    <label htmlFor="quantity">Quantity</label>                            
                     <input  className="make-trade__input"
                             type="text" 
                             name="quantity" 
                             value={this.state.quantity} 
                             onChange={this.handleChange.bind(this)} />
+                    <label htmlFor="Rate">Rate</label>                            
                     <input  className="make-trade__input"
                             type="text" 
                             name="rate" 
                             value={this.state.rate} 
+                            onChange={this.handleChange.bind(this)} />
+                    <label htmlFor="trailing-stop">Trailing Stop (%)</label>                            
+                    <input  className="make-trade__input"
+                            type="text" 
+                            name="trailingStop" 
+                            value={this.state.trailingStop} 
                             onChange={this.handleChange.bind(this)} />
                     <input  type="submit" 
                             value="Place Buy Order" 
@@ -82,7 +93,6 @@ class MakeTradeComponent extends React.Component<Props, object>{
                             value="Place Sell Order" 
                             onClick={this.handleSell.bind(this)} />
                 </form>
-                <p>1:Market  2:Quantity  3:Rate</p>
             </div>
         )
     }
