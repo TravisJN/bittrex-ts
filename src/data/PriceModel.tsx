@@ -73,6 +73,14 @@ class PriceModel {
                 quantity: '',
                 rate: ''
             }
+        },
+        sellLimit: {
+            path: '/market/selllimit',
+            queryParams: {
+                market: '',
+                quantity: '',
+                rate: ''
+            }
         }
     }
 
