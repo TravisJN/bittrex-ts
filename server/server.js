@@ -1,11 +1,14 @@
 // node proxy
-var express = require('express');
-var fetch = require('node-fetch');
-var app = express();
-var sha512 = require('sha512');
-var apiKey = require('../private/Keys.js');
+const express = require('express');
+const fetch = require('node-fetch');
+const app = express();
+const sha512 = require('sha512');
+const apiKey = require('../private/Keys.js');
+const sqlite = require('sqlite3').verbose();
 
-
+/**
+ * === Getters === 
+ */
 var getAPISign = function(aUrl) {
     var secret = apiKey.secret;
     var hasher = sha512.hmac(secret);
@@ -22,10 +25,32 @@ var getNonce = function() {
     return Math.floor(new Date().getTime());
 };
 
+/**
+ * === Properties ===
+ */
 var baseUrl = 'https://bittrex.com/api/v1.1',
     queryParams = 'apikey=' + getAPIKey() + '&nonce=' + getNonce(),
-    url;
+    url,
+    db;
 
+/**
+ * === Methods ===
+ */
+function initializeDatabase() {
+    return new sqlite.Database(__dirname + '/db/orders.db', sqlite.OPEN_READWRITE | sqlite.OPEN_CREATE, (err) => {
+        if (err) {
+            return console.error(err);
+        }
+        
+        console.log('Connected to the orders database.');
+
+        
+    })
+}
+
+/**
+ * === Server routing ===
+ */
 app.use(function(req, res, next) {
     console.log(req.path);
     url = baseUrl + req.originalUrl + queryParams;
@@ -51,6 +76,9 @@ app.use('/', function (req, res) {
     });
 });
 
+/**
+ * === Initialize ===
+ */
 var server = app.listen(8080, function () {
    var host = server.address().address;
    var port = server.address().port;
@@ -58,3 +86,56 @@ var server = app.listen(8080, function () {
    console.log("Bittrex proxy listening at ", host, port);
 });
 
+db = initializeDatabase();
+
+// db.serialize(() => {
+//     var stmt;
+//     console.log('serialized db');
+
+//     db.run("CREATE TABLE if not exists orders (info TEXT)");
+//     stmt = db.prepare("INSERT INTO orders VALUES (?)");
+//     for (var i = 0; i < 10; i++) {
+//         stmt.run("Ipsum " + i);
+//     }
+//     stmt.finalize();
+
+//     db.each("SELECT rowid AS id, info FROM orders", function(err, row) {
+//         console.log(row.id + ": " + row.info);
+//     });
+// });
+
+db.all('SELECT rowid AS myrowid, info FROM orders', [], (err, rows) => {
+    if (err) {
+        return err;
+    }
+
+    rows.forEach((row) => {
+        console.log(row.info);
+    })
+});
+
+db.close((err) => {
+    if (err) {
+        return console.error(err.message);
+    }
+    console.log('Database connection closed.')
+})
+
+
+
+/**
+ * 
+ *  //Perform SELECT Operation
+    db.all("SELECT * from blah blah blah where this="+that,function(err,rows){
+    //rows contain values while errors, well you can figure out.
+    });
+
+    //Perform INSERT operation.
+    db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
+
+    //Perform DELETE operation
+    db.run("DELETE * from table_name where condition");
+
+    //Perform UPDATE operation
+    db.run("UPDATE table_name where condition");
+ */

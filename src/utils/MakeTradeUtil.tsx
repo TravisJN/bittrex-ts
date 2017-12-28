@@ -1,5 +1,6 @@
 import React from 'react';
 import PriceModel from '../data/PriceModel';
+var jsonData = require('../data/history.json');
 
 interface MarketOrderOptions {
     market: string;
@@ -18,7 +19,7 @@ class MakeTradeUtil {
    public buyLimit(aOptions: MarketOrderOptions): void {
         console.log('Buy Limit!', aOptions);
         this.setTrailingStop(aOptions);
-        this.mModel.fetchData('buyLimit', aOptions);
+        //this.mModel.fetchData('buyLimit', aOptions);
    }
 
    public sellLimit(aOptions: MarketOrderOptions): void {
@@ -32,6 +33,7 @@ class MakeTradeUtil {
        // Check if current market price is more than x% below high
        // sell if stop loss is hit or
        // check if latest value is higher than the current high and adjust
+       console.log(jsonData)
    }
 }
 

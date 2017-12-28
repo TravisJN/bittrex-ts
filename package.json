@@ -6,6 +6,7 @@
     "react": "^16.1.1",
     "react-dom": "^16.1.1",
     "sha512": "0.0.1",
+    "sqlite3": "^3.1.13",
     "underscore": "^1.8.3"
   },
   "devDependencies": {

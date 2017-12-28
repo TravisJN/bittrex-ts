@@ -12,6 +12,7 @@ table {
   table-layout: fixed;
   border-collapse: collapse;
   border: 1px solid blue;
+  margin: 10px;
 }
 
 tr { 
@@ -74,6 +75,7 @@ button {
   flex-direction: column;
   justify-content: center;
   max-width: 300px;
+  margin: 10px;
 }
 
 .make-trade__form {

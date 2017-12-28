@@ -50,7 +50,7 @@ class MakeTradeComponent extends React.Component<Props, object>{
 
     private handleSell(aEvent: React.FormEvent<HTMLFormElement>): void {
         aEvent.preventDefault();
-        this.mTradeUtil.sellLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate});
+        this.mTradeUtil.sellLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate, trailingStop: this.state.trailingStop});
     }
 
     private handleChange(aEvent: React.FormEvent<HTMLFormElement>): void {

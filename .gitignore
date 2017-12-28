@@ -22,3 +22,5 @@ yarn-error.log*
 
 # ignore private folder
 private
+
+server/db/*
