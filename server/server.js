@@ -1,15 +1,25 @@
 // node proxy
-const express = require('express');
-const fetch = require('node-fetch');
-const app = express();
-const sha512 = require('sha512');
-const apiKey = require('../private/Keys.js');
-const sqlite = require('sqlite3').verbose();
+const express       = require('express');
+const fetch         = require('node-fetch');
+const sha512        = require('sha512');
+const apiKey        = require('../private/Keys.js');
+const DatabaseUtil  = require('./utils/DatabaseUtil.js');
+const app           = express();
+const dbUtil        = new DatabaseUtil();
+
+/**
+ * === Properties ===
+ */
+const baseUrl = 'https://bittrex.com/api/v1.1';
+const queryParams = 'apikey=' + getAPIKey() + '&nonce=' + getNonce();
+var server;
+var url;
+var db;
 
 /**
  * === Getters === 
  */
-var getAPISign = function(aUrl) {
+function getAPISign(aUrl) {
     var secret = apiKey.secret;
     var hasher = sha512.hmac(secret);
     //can also call 'update(message)' and then 'finalize()'
@@ -17,36 +27,27 @@ var getAPISign = function(aUrl) {
     return final.toString('hex');
 }
 
-var getAPIKey = function() {
+function getAPIKey() {
     return apiKey.apiKey;
 }
 
-var getNonce = function() {
+function getNonce() {
     return Math.floor(new Date().getTime());
 };
 
-/**
- * === Properties ===
- */
-var baseUrl = 'https://bittrex.com/api/v1.1',
-    queryParams = 'apikey=' + getAPIKey() + '&nonce=' + getNonce(),
-    url,
-    db;
 
 /**
  * === Methods ===
  */
-function initializeDatabase() {
-    return new sqlite.Database(__dirname + '/db/orders.db', sqlite.OPEN_READWRITE | sqlite.OPEN_CREATE, (err) => {
-        if (err) {
-            return console.error(err);
-        }
+// function initializeDatabase() {
+//     return new sqlite.Database(__dirname + '/db/orders.db', sqlite.OPEN_READWRITE | sqlite.OPEN_CREATE, (err) => {
+//         if (err) {
+//             return console.error(err);
+//         }
         
-        console.log('Connected to the orders database.');
-
-        
-    })
-}
+//         console.log('Connected to the orders database.');  
+//     });
+// }
 
 /**
  * === Server routing ===
@@ -79,63 +80,54 @@ app.use('/', function (req, res) {
 /**
  * === Initialize ===
  */
-var server = app.listen(8080, function () {
-   var host = server.address().address;
-   var port = server.address().port;
-   
-   console.log("Bittrex proxy listening at ", host, port);
-});
+function init() {
 
-db = initializeDatabase();
+    // mock data for dev-ing
+    var rowObject = {
+        id: 27,
+        date: 'december 28 7pm',
+        currency: 'BTC-XMR',
+        current_price: '0.13',
+        highest_price: '0.13',
+        percent_from_high: '0',
+        percent_change: '5',
+        sell_placed: false
+    }
 
-// db.serialize(() => {
-//     var stmt;
-//     console.log('serialized db');
 
-//     db.run("CREATE TABLE if not exists orders (info TEXT)");
-//     stmt = db.prepare("INSERT INTO orders VALUES (?)");
-//     for (var i = 0; i < 10; i++) {
-//         stmt.run("Ipsum " + i);
+    // Start node server
+    server = app.listen(8080, function () {
+        var host = server.address().address;
+        var port = server.address().port;
+        
+        console.log("Bittrex proxy listening at ", host, port);
+    });
+    // Start database
+    db = dbUtil.initializeDatabase();
+    dbUtil.buildTable();
+    dbUtil.insertRow(rowObject);
+    db.close((err) => {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log('Database connection closed.');
+    });
+}
+
+init();
+// db.all('SELECT rowid AS myrowid, info FROM orders', [], (err, rows) => {
+//     if (err) {
+//         return err;
 //     }
-//     stmt.finalize();
 
-//     db.each("SELECT rowid AS id, info FROM orders", function(err, row) {
-//         console.log(row.id + ": " + row.info);
-//     });
+//     rows.forEach((row) => {
+//         console.log(row.info);
+//     })
 // });
 
-db.all('SELECT rowid AS myrowid, info FROM orders', [], (err, rows) => {
-    if (err) {
-        return err;
-    }
-
-    rows.forEach((row) => {
-        console.log(row.info);
-    })
-});
-
-db.close((err) => {
-    if (err) {
-        return console.error(err.message);
-    }
-    console.log('Database connection closed.')
-})
-
-
-
-/**
- * 
- *  //Perform SELECT Operation
-    db.all("SELECT * from blah blah blah where this="+that,function(err,rows){
-    //rows contain values while errors, well you can figure out.
-    });
-
-    //Perform INSERT operation.
-    db.run("INSERT into table_name(col1,col2,col3) VALUES (val1,val2,val3)");
-
-    //Perform DELETE operation
-    db.run("DELETE * from table_name where condition");
-
-    //Perform UPDATE operation
-    db.run("UPDATE table_name where condition");
- */
+// db.close((err) => {
+//     if (err) {
+//         return console.error(err.message);
+//     }
+//     console.log('Database connection closed.')
+// });
