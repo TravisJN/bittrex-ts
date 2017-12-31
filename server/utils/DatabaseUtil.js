@@ -5,7 +5,8 @@ class DatabaseUtil {
     
     constructor() {
         this.sqlQuery = {
-            createOrdersTable: 'CREATE TABLE Orders (id integer, date text, currency text, current_price text, highest_price text, percent_from_high text, percent_change text, sell_placed boolean);'
+            createOrdersTable: 'CREATE TABLE Orders (id integer, date text, currency text, current_price text, highest_price text, percent_from_high text, percent_change text, sell_placed boolean);',
+            insertIntoOrders: 'INSERT INTO Orders(id, date, currency, current_price, highest_price, percent_from_high, percent_change, sell_placed) VALUES (?, ?, ?, ?, ?, ?, ?, ?);'
         }
     }
 
@@ -24,17 +25,17 @@ class DatabaseUtil {
     buildTable() {
         this.db.run(this.sqlQuery.createOrdersTable, [], (err) => {
             if (err) {
-                console.error(err);
+                return console.error(err);
             }
         });
     }
 
-    // will more specifically define this method later
+    // will more specifically name this method later
     insertRow(aRowInfo) {
         let rowOptions = _.values(aRowInfo);
 
         this.db.serialize(() => {
-            this.db.run("INSERT INTO Orders(id, date, currency, current_price, highest_price, percent_from_high, percent_change, sell_placed) VALUES (?, ?, ?, ?, ?, ?, ?, ?);", 
+            this.db.run(this.sqlQuery.insertIntoOrders, 
             rowOptions,
             (err) => {
                 if (err) {
