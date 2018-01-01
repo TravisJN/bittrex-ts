@@ -59,7 +59,7 @@ class PingPongController extends BaseController {
                 if (data.success && data.result) {
                     if (!this.isOrderOpen(data.result)) {
                         console.log('Order filled');
-                        this.isOwned = !this.owned;
+                        this.isOwned = !this.isOwned;
                         this.orderPlaced = false;
                     } else {
                         // JUST LOGGING HERE
