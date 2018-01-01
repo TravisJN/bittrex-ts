@@ -22,64 +22,117 @@ class PingPongController extends BaseController {
     constructor() {
         super();
 
-        this.buyPrice = 0;
-        this.sellPrice = 0;
+        this.percentGain = 0.03;  // Used to calculate sell price
+        this.buyPrice = Number.MAX_SAFE_INTEGER;
+        this.sellPrice = Number.MAX_SAFE_INTEGER;
         this.currentPrice = 0;
-        this.quantity = 0;
-        this.isOwned = false;
-        this.interval = 5000;
+        this.quantity = 1;
+        this.isOwned = true;
+        this.orderPlaced = true;
+        this.interval = 10000;
         this.market = '';
+        this.orders = [];
+        this.lastOrderUuid = '';
 
-        this.timer = setInterval(this.checkPrice, this.interval);
+        this.timer = setInterval(this.checkPrice.bind(this), this.interval);
     }
 
     // Hard coding a ping pong here for the first one
-    initPingPong(aMarket = 'BTC-XLM') {
+    initPingPong(aMarket) {
         this.market = aMarket;
-        this.fetchCurrencyData(this.market).then((result) => {
-            this.currentPrice = result.Last;
+        this.fetchCurrencyData(this.market).then((data) => {
+            console.log(data);
+            this.currentPrice = data.result.Last;
 
-            this.executeBuy(this.market, 0.005, this.currentPrice).then((result) => {
-                // New entry in database
-                console.log('Buy order placed');
-                console.log(result);
-            });
+            // this.executeBuy(this.market, 0.005, this.currentPrice).then((data) => {
+            //     // New entry in database
+            //     console.log('Buy order placed');
+            //     console.log(data);
+            // });
         });
     }
 
     checkPrice() {
-        // get current price
-        this.fetchCurrencyData(this.market).then((result) => {
-            this.currentPrice = result.Last;
 
-            if (this.isOwned) {
-                if (this.currentPrice >= this.sellPrice) {
-                    this.executeSell(this.market, this.quantity, this.currentPrice).then((result) => {
-                        // New entry in database
-                        console.log('Sell order placed');
-                        console.log(result);
+        if (this.orderPlaced) {
+            this.fetchOpenOrders(this.market).then((data) => {
+                if (data.success && data.result) {
+                    if (!this.isOrderOpen(data.result)) {
+                        console.log('Order filled');
+                        this.isOwned = !this.owned;
+                        this.orderPlaced = false;
+                    } else {
+                        // JUST LOGGING HERE
+                        this.fetchCurrencyData(this.market).then((data) => {
+                            this.currentPrice = data.result.Last;
+                            if (this.isOwned) {
+                                console.log('Sell order pending. Target sell price: ' + this.sellPrice + '.  Current price: ' + this.currentPrice);
+                            } else {
+                                console.log('Buy order pending. Target buy price: ' + this.buyPrice + '.  Current price: ' + this.currentPrice);
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            console.log('No order placed, fetching currency data...');
+            // get current price
+            this.fetchCurrencyData(this.market).then((data) => {
+                this.currentPrice = data.result.Last;
+    
+                if (this.isOwned) {
+                    console.log('Currency is owned, placing sell order at ' + this.sellPrice);                    
+                    this.executeSell(this.market, this.quantity, this.sellPrice).then((data) => {
+                        if (data.success) {
+                            this.orderPlaced = true;
+                            this.orders.push({orderType: 'Sell',uuid: data.result.uuid});
+                            
+                            this.lastOrderUuid = data.result.uuid;
+
+                            console.log('Sell order placed. uuid: ' + data.result.uuid);
+                        } else {
+                            console.log('ERROR: Could not place Sell order: ', data);
+                        }
                     })
+                } else {
+                    console.log('Currency not owned');
+                    if (this.currentPrice <= this.buyPrice) {
+                        console.log('Current price <= buy price, placing buy order...');
+                        this.executeBuy(this.market, this.quantity, this.currentPrice).then((data) => {
+                            if (data.success) {
+                                this.orderPlaced = true;
+                                this.orders.push({orderType: 'Buy',uuid: data.result.uuid});
+                                
+                                this.lastOrderUuid = data.result.uuid;
+
+                                this.buyPrice = this.currentPrice;
+                                this.sellPrice = this.calculateSellPrice();
+
+                                console.log('Buy order placed. uuid: ' + data.result.uuid);
+                            } else {
+                                console.log('ERROR: Could not place Buy order: ', data);
+                            }
+                        });
+                    }
                 }
-            } else {
-                if (this.currentPrice <= this.buyPrice) {
-                    this.executeBuy(this.market, this.quantity, this.currentPrice).then((result) => {
-                        // New entry in database
-                        console.log('Buy order placed');
-                        console.log(result);
-                    });
-                }
+            });
+        }
+    }
+
+    calculateSellPrice() {
+        return this.buyPrice + (this.buyPrice * this.percentGain);
+    }
+
+    isOrderOpen(orders) {
+        // check uuid here to confirm that this order is the one that was placed from this controller
+        for (var i = 0; i < orders.length; i++) {
+            if (orders[i].OrderUuid === this.lastOrderUuid) {
+                // Order is still open
+                return true;
             }
-        });
-        // if isOwned
-            // if current price > sellPrice
-                // sell at current price
-            // else 
-                // do nothing
-        // else 
-            // if current price <= buyPrice
-                //buy at current price
-            // else
-                // do nothing
+        }
+
+        return false;
     }
 }
 

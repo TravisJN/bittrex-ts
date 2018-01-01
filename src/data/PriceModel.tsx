@@ -209,6 +209,8 @@ class PriceModel {
      * @param {string} aEndPoint The endpoint key used for mapping the response data correctly
      */
     makeRequest(aUrl, aEndPoint) {
+        console.log('Request sent: ', aUrl);
+
         if (aEndPoint === 'buyLimit') {
             console.log(aUrl);
             return;

@@ -46,6 +46,11 @@ class Display extends React.Component<Props, object>{
             this.mPriceModel.fetchData('balances').then((responseData: any) => {
                 this.setState({balances: this.mPriceModel.balances});            
             });
+
+            // Dev: for easily viewing the min trade size
+            this.mPriceModel.fetchData('getMarkets').then((responseData: any) => {
+                console.log(responseData);
+            });
         });
     }
 

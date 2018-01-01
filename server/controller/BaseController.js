@@ -29,13 +29,13 @@ class BaseController {
     };
 
     executeBuy(aMarket, aQuantity, aRate) {
-        let requestUrl = this.baseUrl + '/market/buylimit?market=' + aMarket + '&quantity=' + aQuantity + '&rate=' + aRate;
+        let requestUrl = this.baseUrl + '/market/buylimit?' + this.queryParams + '&market=' + aMarket + '&quantity=' + aQuantity + '&rate=' + aRate;
 
         return this.makeRequest(requestUrl);        
     }
 
     executeSell(aMarket, aQuantity, aRate) {
-        let requestUrl = this.baseUrl + '/market/selllimit?market=' + aMarket + '&quantity=' + aQuantity + '&rate=' + aRate;
+        let requestUrl = this.baseUrl + '/market/selllimit?' + this.queryParams + '&market=' + aMarket + '&quantity=' + aQuantity + '&rate=' + aRate;
         
         return this.makeRequest(requestUrl);
     }
@@ -44,6 +44,12 @@ class BaseController {
         let requestUrl = this.baseUrl + '/public/getticker?market=' + aMarket;
 
         return this.makeRequest(requestUrl)
+    }
+
+    fetchOpenOrders(aMarket) {
+        let requestUrl = this.baseUrl + '/market/getopenorders?' + this.queryParams + '&market=' + aMarket;
+        
+        return this.makeRequest(requestUrl);
     }
     
     makeRequest(aUrl) {
@@ -56,7 +62,7 @@ class BaseController {
                 return response.json();
             })
             .then(function(body) {
-                return body.result;
+                return body;
             });
     }
 }

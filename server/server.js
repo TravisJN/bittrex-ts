@@ -1,5 +1,4 @@
 // node proxy
-
 const express       = require('express');
 const fetch         = require('node-fetch');
 const sha512        = require('sha512');
@@ -77,7 +76,7 @@ app.use('/', function (req, res) {
  */
 function init() {
 
-    var baseController = new BaseController();
+    // var baseController = new BaseController();
     var pingPongController = new PingPongController();
 
     // mock data for dev-ing
