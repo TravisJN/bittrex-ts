@@ -6,10 +6,28 @@ const fetch     = require('node-fetch');
 const sha512    = require('sha512');
 const apiKey    = require('../../private/Keys.js');
 
+const DatabaseUtil  = require('../utils/DatabaseUtil.js');
+const dbUtil        = new DatabaseUtil();
+
 class BaseController {
     constructor() {
         this.baseUrl = 'https://bittrex.com/api/v1.1';
         this.queryParams = 'apikey=' + this.getAPIKey() + '&nonce=' + this.getNonce();
+
+        this.initDatabase();
+    }
+    
+    initDatabase() {
+        this.db = dbUtil.initializeDatabase();
+        
+        dbUtil.buildTable();
+        
+        // db.close((err) => {
+        //     if (err) {
+        //         return console.error(err.message);
+        //     }
+        //     console.log('Database connection closed.');
+        // });
     }
 
     getAPISign(aUrl) {

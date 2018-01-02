@@ -22,17 +22,21 @@ class PingPongController extends BaseController {
     constructor() {
         super();
 
-        this.percentGain = 0.015;  // Used to calculate sell price
-        this.buyPrice = 0.000051;
-        this.sellPrice = Number.MAX_SAFE_INTEGER;
+        this.percentGain = 0.005;  // Minimum percentage profit before any sell order would be placed
+        this.buyPrice = Number.MAX_SAFE_INTEGER;
+        this.sellPrice = 0;
+        this.minimunSellPrice = this.calculateSellPrice();
         this.currentPrice = 0;
-        this.quantity = 250;
+        this.quantity = 100;
         this.isOwned = false;
         this.orderPlaced = false;
-        this.interval = 15000;
-        this.market = 'BTC-ADA';
+        this.interval = 10000;
+        this.market = 'BTC-NXT';
         this.orders = [];
         this.lastOrderUuid = '';
+
+        this.highPrice = 0;
+        this.stopLoss = 0.005;
 
         this.timer = setInterval(this.checkPrice.bind(this), this.interval);
     }
@@ -53,66 +57,22 @@ class PingPongController extends BaseController {
     // }
 
     checkPrice() {
-
         if (this.orderPlaced) {
-            this.fetchOpenOrders(this.market).then((data) => {
-                if (data.success && data.result) {
-                    if (!this.isOrderOpen(data.result)) {
-                        console.log('Order filled');
-                        this.isOwned = !this.isOwned;
-                        this.orderPlaced = false;
-                    } else {
-                        // JUST LOGGING HERE
-                        this.fetchCurrencyData(this.market).then((data) => {
-                            this.currentPrice = data.result.Last;
-                            if (this.isOwned) {
-                                console.log('Sell order pending. Target sell price: ' + this.sellPrice + '.  Current price: ' + this.currentPrice);
-                            } else {
-                                console.log('Buy order pending. Target buy price: ' + this.buyPrice + '.  Current price: ' + this.currentPrice);
-                            }
-                        });
-                    }
-                }
-            });
+            this.checkOpenOrders();
         } else {
             console.log('No order placed, fetching currency data...');
             // get current price
             this.fetchCurrencyData(this.market).then((data) => {
                 this.currentPrice = data.result.Last;
-    
+                
                 if (this.isOwned) {
-                    console.log('Currency is owned, placing sell order at ' + this.sellPrice);                    
-                    this.executeSell(this.market, this.quantity, this.sellPrice).then((data) => {
-                        if (data.success) {
-                            this.orderPlaced = true;
-                            this.orders.push({orderType: 'Sell',uuid: data.result.uuid});
-                            
-                            this.lastOrderUuid = data.result.uuid;
-
-                            console.log('Sell order placed. uuid: ' + data.result.uuid);
-                        } else {
-                            console.log('ERROR: Could not place Sell order: ', data);
-                        }
-                    })
+                    // Check trailing stop to determine if the sell order should be placed
+                    this.setTrailingStop();
+                    //this.placeSellOrder();
                 } else {
                     console.log('Currency not owned');
                     if (this.currentPrice <= this.buyPrice) {
-                        console.log('Current price <= buy price, placing buy order...');
-                        this.executeBuy(this.market, this.quantity, this.currentPrice).then((data) => {
-                            if (data.success) {
-                                this.orderPlaced = true;
-                                this.orders.push({orderType: 'Buy',uuid: data.result.uuid});
-                                
-                                this.lastOrderUuid = data.result.uuid;
-
-                                this.buyPrice = this.currentPrice;
-                                this.sellPrice = this.calculateSellPrice();
-
-                                console.log('Buy order placed. uuid: ' + data.result.uuid);
-                            } else {
-                                console.log('ERROR: Could not place Buy order: ', data);
-                            }
-                        });
+                        this.placeBuyOrder();
                     } else {
                         console.log('Current price too high. Buy price: ' + this.buyPrice + '.  Current price: ' + this.currentPrice);
                     }
@@ -121,8 +81,102 @@ class PingPongController extends BaseController {
         }
     }
 
+    getPercentGain() {
+        return ((this.currentPrice - this.buyPrice) / this.buyPrice).toFixed(4);
+    }
+
+    setTrailingStop() {
+        if (this.currentPrice > this.highPrice) {
+            console.log('New high price: ' + this.currentPrice);
+            this.highPrice = this.currentPrice;
+            this.sellPrice = this.highPrice - (this.highPrice * this.stopLoss);
+        }
+
+        console.log('Currency owned. Percent gain: ' + this.getPercentGain() + '. Current high: ' + this.highPrice + '. Current target sell price: ' + this.sellPrice + '. Current price: ' + this.currentPrice);
+        console.log('Current target sell price: ' + this.sellPrice.toFixed(8) + '. Current price: ' + this.currentPrice);
+        console.log('minimum sell price: ' + this.minimumSellPrice.toFixed(8));
+        console.log((this.sellPrice > this.minimumSellPrice), (this.currentPrice <= this.sellPrice));
+        
+        if (this.sellPrice > this.minimumSellPrice && this.currentPrice <= this.sellPrice) {
+            this.placeSellOrder();
+        }
+    }
+
+    checkOpenOrders() {
+        this.fetchOpenOrders(this.market).then((data) => {
+            if (data.success && data.result) {
+                if (!this.isOrderOpen(data.result)) {
+                    console.log('Order filled');
+                    this.isOwned = !this.isOwned;
+                    this.orderPlaced = false;
+                } else {
+                    // JUST LOGGING HERE
+                    this.fetchCurrencyData(this.market).then((data) => {
+                        this.currentPrice = data.result.Last;
+                        if (this.isOwned) {
+                            console.log('Sell order pending. Target sell price: ' + this.sellPrice + '.  Current price: ' + this.currentPrice);
+                        } else {
+                            console.log('Buy order pending. Target buy price: ' + this.buyPrice + '.  Current price: ' + this.currentPrice);
+                        }
+                    });
+                }
+            }
+        }); 
+    }
+
+    placeSellOrder() {
+        console.log('Currency is owned, placing sell order at ' + this.sellPrice);                    
+        this.executeSell(this.market, this.quantity, this.sellPrice).then((data) => {
+            if (data.success) {
+                this.orderPlaced = true;
+                this.orders.push({orderType: 'Sell',uuid: data.result.uuid});
+
+                // this.db.insertRow({
+                //     id: data.result.uuid,
+                //     date: Date.now(),
+                //     currency: this.market,
+                //     price: this.currentPrice,
+                //     type: 'Sell'
+                // });
+
+                this.lastOrderUuid = data.result.uuid;
+
+                console.log('Sell order placed. uuid: ' + data.result.uuid);
+            } else {
+                console.log('ERROR: Could not place Sell order: ', data);
+            }
+        });
+    }
+
+    placeBuyOrder() {
+        console.log('Current price <= buy price, placing buy order at ' + this.currentPrice);
+        this.executeBuy(this.market, this.quantity, this.currentPrice).then((data) => {
+            if (data.success) {
+                this.orderPlaced = true;
+                this.orders.push({orderType: 'Buy',uuid: data.result.uuid});
+                
+                // this.db.insertRow({
+                //     id: data.result.uuid,
+                //     date: Date.now(),
+                //     currency: this.market,
+                //     price: this.currentPrice,
+                //     type: 'Buy'
+                // });
+
+                this.lastOrderUuid = data.result.uuid;
+
+                this.buyPrice = this.currentPrice;
+                this.minimumSellPrice = this.calculateSellPrice();
+
+                console.log('Buy order placed. uuid: ' + data.result.uuid);
+            } else {
+                console.log('ERROR: Could not place Buy order: ', data);
+            }
+        });
+    }
+
     calculateSellPrice() {
-        return this.buyPrice + (this.buyPrice * this.percentGain);
+        return this.buyPrice + (this.buyPrice * this.stopLoss);
     }
 
     isOrderOpen(orders) {

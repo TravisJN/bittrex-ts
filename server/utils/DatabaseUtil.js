@@ -5,8 +5,8 @@ class DatabaseUtil {
     
     constructor() {
         this.sqlQuery = {
-            createOrdersTable: 'CREATE TABLE Orders (id integer, date text, currency text, current_price text, highest_price text, percent_from_high text, percent_change text, sell_placed boolean);',
-            insertIntoOrders: 'INSERT INTO Orders(id, date, currency, current_price, highest_price, percent_from_high, percent_change, sell_placed) VALUES (?, ?, ?, ?, ?, ?, ?, ?);'
+            createOrdersTable: 'CREATE TABLE if not exists Orders (id text, date text, currency text, price text, type text);',
+            insertIntoOrders: 'INSERT INTO Orders(id, date, currency, price, type) VALUES (?, ?, ?, ?, ?);'
         }
     }
 
@@ -41,7 +41,6 @@ class DatabaseUtil {
                 if (err) {
                     return console.log(err);
                 }
-                console.log('new row inserted woop woop!');
             });
             
             this.db.each("SELECT * FROM Orders", function(err, row) {

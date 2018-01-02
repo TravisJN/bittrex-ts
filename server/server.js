@@ -7,7 +7,7 @@ const DatabaseUtil  = require('./utils/DatabaseUtil.js');
 const BaseController = require('./controller/BaseController');
 const PingPongController = require('./controller/PingPongController');
 const app           = express();
-const dbUtil        = new DatabaseUtil();
+//const dbUtil        = new DatabaseUtil();
 
 /**
  * === Properties ===
@@ -75,22 +75,7 @@ app.use('/', function (req, res) {
  * === Initialize ===
  */
 function init() {
-
-    // var baseController = new BaseController();
     var pingPongController = new PingPongController();
-
-    // mock data for dev-ing
-    var rowObject = {
-        id: 27,
-        date: 'december 28 7pm',
-        currency: 'BTC-XMR',
-        current_price: '0.13',
-        highest_price: '0.13',
-        percent_from_high: '0',
-        percent_change: '5',
-        sell_placed: false
-    }
-
 
     // Start node server
     server = app.listen(8080, function () {
@@ -101,10 +86,6 @@ function init() {
     });
 
     //this.initDB();
-
-    // baseController.fetchCurrencyData('BTC-LTC').then((result) => {
-    //     console.log(result)
-    // });
 }
 
 function initDB() {
