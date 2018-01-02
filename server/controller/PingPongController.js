@@ -22,15 +22,15 @@ class PingPongController extends BaseController {
     constructor() {
         super();
 
-        this.percentGain = 0.03;  // Used to calculate sell price
+        this.percentGain = 0.035;  // Used to calculate sell price
         this.buyPrice = Number.MAX_SAFE_INTEGER;
         this.sellPrice = Number.MAX_SAFE_INTEGER;
         this.currentPrice = 0;
-        this.quantity = 1;
-        this.isOwned = true;
-        this.orderPlaced = true;
+        this.quantity = 10;
+        this.isOwned = false;
+        this.orderPlaced = false;
         this.interval = 10000;
-        this.market = '';
+        this.market = 'BTC-OMG';
         this.orders = [];
         this.lastOrderUuid = '';
 
@@ -38,19 +38,19 @@ class PingPongController extends BaseController {
     }
 
     // Hard coding a ping pong here for the first one
-    initPingPong(aMarket) {
-        this.market = aMarket;
-        this.fetchCurrencyData(this.market).then((data) => {
-            console.log(data);
-            this.currentPrice = data.result.Last;
+    // initPingPong(aMarket) {
+    //     this.market = aMarket;
+    //     this.fetchCurrencyData(this.market).then((data) => {
+    //         console.log(data);
+    //         this.currentPrice = data.result.Last;
 
-            // this.executeBuy(this.market, 0.005, this.currentPrice).then((data) => {
-            //     // New entry in database
-            //     console.log('Buy order placed');
-            //     console.log(data);
-            // });
-        });
-    }
+    //         // this.executeBuy(this.market, 0.005, this.currentPrice).then((data) => {
+    //         //     // New entry in database
+    //         //     console.log('Buy order placed');
+    //         //     console.log(data);
+    //         // });
+    //     });
+    // }
 
     checkPrice() {
 
