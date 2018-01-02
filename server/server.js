@@ -4,10 +4,10 @@ const fetch         = require('node-fetch');
 const sha512        = require('sha512');
 const apiKey        = require('../private/Keys.js');
 const DatabaseUtil  = require('./utils/DatabaseUtil.js');
-const app           = express();
-const dbUtil        = new DatabaseUtil();
 const BaseController = require('./controller/BaseController');
 const PingPongController = require('./controller/PingPongController');
+const app           = express();
+const dbUtil        = new DatabaseUtil();
 
 /**
  * === Properties ===

@@ -22,15 +22,15 @@ class PingPongController extends BaseController {
     constructor() {
         super();
 
-        this.percentGain = 0.035;  // Used to calculate sell price
-        this.buyPrice = Number.MAX_SAFE_INTEGER;
+        this.percentGain = 0.015;  // Used to calculate sell price
+        this.buyPrice = 0.000051;
         this.sellPrice = Number.MAX_SAFE_INTEGER;
         this.currentPrice = 0;
-        this.quantity = 10;
+        this.quantity = 250;
         this.isOwned = false;
         this.orderPlaced = false;
-        this.interval = 10000;
-        this.market = 'BTC-OMG';
+        this.interval = 15000;
+        this.market = 'BTC-ADA';
         this.orders = [];
         this.lastOrderUuid = '';
 
@@ -113,6 +113,8 @@ class PingPongController extends BaseController {
                                 console.log('ERROR: Could not place Buy order: ', data);
                             }
                         });
+                    } else {
+                        console.log('Current price too high. Buy price: ' + this.buyPrice + '.  Current price: ' + this.currentPrice);
                     }
                 }
             });
