@@ -6,6 +6,7 @@ const apiKey        = require('../private/Keys.js');
 const DatabaseUtil  = require('./utils/DatabaseUtil.js');
 const BaseController = require('./controller/BaseController');
 const PingPongController = require('./controller/PingPongController');
+const MovingAverageController = require('./controller/MovingAverageController');
 const app           = express();
 //const dbUtil        = new DatabaseUtil();
 
@@ -75,7 +76,8 @@ app.use('/', function (req, res) {
  * === Initialize ===
  */
 function init() {
-    var pingPongController = new PingPongController();
+    //var pingPongController = new PingPongController();
+    var movingAverageController = new MovingAverageController();
 
     // Start node server
     server = app.listen(8080, function () {

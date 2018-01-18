@@ -22,21 +22,21 @@ class PingPongController extends BaseController {
     constructor() {
         super();
 
-        this.percentGain = 0.005;  // Minimum percentage profit before any sell order would be placed
+        this.percentGain = 0.03;  // Minimum percentage profit before any sell order would be placed
         this.buyPrice = Number.MAX_SAFE_INTEGER;
         this.sellPrice = 0;
         this.minimunSellPrice = this.calculateSellPrice();
         this.currentPrice = 0;
-        this.quantity = 100;
+        this.quantity = 200;
         this.isOwned = false;
         this.orderPlaced = false;
         this.interval = 10000;
-        this.market = 'BTC-NXT';
+        this.market = 'BTC-XRP';
         this.orders = [];
         this.lastOrderUuid = '';
 
         this.highPrice = 0;
-        this.stopLoss = 0.005;
+        this.stopLoss = 0.02;
 
         this.timer = setInterval(this.checkPrice.bind(this), this.interval);
     }
