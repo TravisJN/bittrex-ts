@@ -1,4 +1,5 @@
 const BaseController = require('./BaseController');
+const OrderManager = require('../utils/OrderManager');
 
 const MS_PER_MINUTE = 1000 * 60;
 
@@ -6,12 +7,14 @@ class MovingAverageController extends BaseController {
     constructor() {
         super();
 
-        this.isRealMoney = false;
+        this.OrderManager = new OrderManager(this);
 
-        this.market = 'BTC-ETH';
+        this.isRealMoney = true;
+
+        this.market = 'BTC-XVG';
         this.isOwned = false;
 
-        this.quantity = 10;
+        this.quantity = 100;
         this.balance = 0;
         this.startingBalance = 0;  // Will be set once on initial purchase
 
@@ -19,7 +22,7 @@ class MovingAverageController extends BaseController {
         this.currentPrice = 0;
         this.average = 0;
         this.averageLength = 10;  // Number of "closing" prices to collect for the average
-        this.interval = 1 * MS_PER_MINUTE;
+        this.interval = 5000;
 
         this.profitHistory = [];
 
@@ -39,11 +42,15 @@ class MovingAverageController extends BaseController {
         /**
          * UNCOMMENT THIS LINE TO INIT TRADE WITH ABOVE SETTINGS
          */
-        // this.init(); 
+        this.startTimer(); 
     }
 
-    init() {
+    startTimer() {
         this.timer = setInterval(this.tick.bind(this), this.interval);
+    }
+
+    stopTimer() {
+        clearInterval(this.timer);
     }
 
     tick() {
@@ -142,24 +149,12 @@ class MovingAverageController extends BaseController {
         let currentProfit = this.calculatePercentReturn();
 
         if (this.isRealMoney) {
-            console.log('Placing sell order at ' + this.sellPrice);                    
-            this.executeSell(this.market, this.quantity, this.sellPrice).then((data) => {
-                if (data.success) {
-                    this.orderPlaced = true;
-                    this.orders.push({
-                        orderType: 'Sell',
-                        uuid: data.result.uuid,
-                        price: this.currentPrice
-                    });
-
-                    this.lastOrderUuid = data.result.uuid;
-
-                    console.log('Sell order placed. uuid: ' + data.result.uuid);
-                } else {
-                    console.log('ERROR: Could not place Sell order: ', data);
-                }
+            this.stopTimer();
+            this.OrderManager.placeSellAndWaitForFulfillment(this.market, this.quantity, this.currentPrice).then((data) => {
+                console.log('Sell order completely complete. Restarting Moving Average timer. Well done');
+                this.isOwned = false;
+                this.startTimer();
             });
-
         } else {
             if (this.currentPrice > ((this.buyPrice * this.minimumProfit) + this.buyPrice)) {
                 this.balance = this.quantity * this.currentPrice;
@@ -192,26 +187,16 @@ class MovingAverageController extends BaseController {
     placeBuyOrder() {
 
         if (this.isRealMoney) {
-            this.executeBuy(this.market, this.quantity, this.currentPrice).then((data) => {
-                if (data.success) {
-                    this.orderPlaced = true;
-                    this.orders.push({
-                        orderType: 'Buy',
-                        uuid: data.result.uuid,
-                        price: this.currentPrice
-                    });
-
-                    this.lastOrderUuid = data.result.uuid;
-                    this.buyPrice = this.currentPrice;
-    
-                    console.log('Buy order placed. uuid: ' + data.result.uuid);
-                } else {
-                    console.log('ERROR: Could not place Buy order: ', data);
-                }
+            // Pause until order is fulfilled then resume timer
+            this.stopTimer();
+            this.OrderManager.placeBuyAndWaitForFulfillment(this.market, this.quantity, this.currentPrice).then((data) => {
+                console.log('Buy order completely complete. Restarting Moving Average timer. Well done');                
+                this.isOwned = true;
+                this.startTimer();
             });
         } else {
             if (!this.startingBalance) {
-                this.balance = this.currentPrice * this.quantity;  // quantity is initialized to 10
+                this.balance = this.currentPrice * this.quantity;
                 this.startingBalance = this.balance;
             } else {   
                 this.quantity = this.balance / this.currentPrice;        
