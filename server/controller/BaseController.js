@@ -14,7 +14,7 @@ class BaseController {
         this.baseUrl = 'https://bittrex.com/api/v1.1';
         this.queryParams = 'apikey=' + this.getAPIKey() + '&nonce=' + this.getNonce();
 
-        this.initDatabase();
+        // this.initDatabase();
     }
     
     initDatabase() {

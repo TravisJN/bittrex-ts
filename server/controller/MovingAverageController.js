@@ -6,6 +6,8 @@ class MovingAverageController extends BaseController {
     constructor() {
         super();
 
+        this.isRealMoney = false;
+
         this.market = 'BTC-ETH';
         this.isOwned = false;
 
@@ -32,7 +34,12 @@ class MovingAverageController extends BaseController {
         this.largestProfit = 0;
         this.largestLoss = 0;
 
-        this.init();
+        this.orders = [];
+
+        /**
+         * UNCOMMENT THIS LINE TO INIT TRADE WITH ABOVE SETTINGS
+         */
+        // this.init(); 
     }
 
     init() {
@@ -40,6 +47,7 @@ class MovingAverageController extends BaseController {
     }
 
     tick() {
+    // -------- Log --------------
         console.log(' ');
         console.log('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -');
         console.log('   Request number:        ' + this.requestNumber++);
@@ -59,16 +67,18 @@ class MovingAverageController extends BaseController {
         if (this.isOwned) {
             console.log('   Buy price:             ' + this.buyPrice);
             console.log('   Minimum sell price:    ' + this.minimumSellPrice);
-            console.log('   Current profit:        ' + this.calculateProfit() + '%');
+            console.log('   Current profit:        ' + this.calculatePercentReturn() + '%');
         }
         
-        
+    // ---------- Begin ----------
         this.fetchCurrentPrice().then((data) => {
             if (data && data.result && data.result.Last) {
                 this.currentPrice = data.result.Last;
                 this.history.push(this.currentPrice);
             }
+            // Set value of this.average
             this.calculateAverage();
+
             if (this.average) {
                 this.checkAverageAgainstCurrentPrice();
             } 
@@ -84,6 +94,11 @@ class MovingAverageController extends BaseController {
         });
     }
 
+    /**
+     * @description Sets this.average by calculating the average of the history array
+     * @returns     void
+     * @sideffects  this.average
+     */
     calculateAverage() {
         let sum = 0;
 
@@ -91,6 +106,7 @@ class MovingAverageController extends BaseController {
             this.history.shift();
         } else {
             console.log('Not enough historical data to calculate average. ' + this.history.length + '/' + this.averageLength);
+            this.average = 0;
             return;
         }
 
@@ -106,71 +122,113 @@ class MovingAverageController extends BaseController {
      */
     checkAverageAgainstCurrentPrice() {
         if (this.isOwned) {
-            this.calculateProfit();
+            this.calculatePercentReturn();
             // check if the current price is less than the moving average and sell
             if (this.average > this.currentPrice) {
-                this.placeSell();
+                this.placeSellOrder();
             } else {
                 console.log('Current price is more than average price. Waiting for cross-over.');                
             }
         } else {
             if (this.average < this.currentPrice) {
-                this.placeBuy();
+                this.placeBuyOrder();
             } else {
                 console.log('Currency not owned. Current price is less than average price. Waiting for cross-over.');
             }
         }
     }
 
-    placeSell() {
-        let currentProfit = this.calculateProfit();
+    placeSellOrder() {
+        let currentProfit = this.calculatePercentReturn();
 
-        if (this.currentPrice > ((this.buyPrice * this.minimumProfit) + this.buyPrice)) {
-            this.balance = this.quantity * this.currentPrice;
-            this.sellCount++;
-            // Place sell
-            console.log('---------------------------------------------------------------------------------');            
-            console.log('====Cross-over occurred! Current price less than average price. Place sell.======');                
-            this.isOwned = false;
-            this.sellPrice = this.currentPrice;
-            if (currentProfit > 0) {
-                if (currentProfit > this.largestProfit) {
-                    this.largestProfit = currentProfit;
+        if (this.isRealMoney) {
+            console.log('Placing sell order at ' + this.sellPrice);                    
+            this.executeSell(this.market, this.quantity, this.sellPrice).then((data) => {
+                if (data.success) {
+                    this.orderPlaced = true;
+                    this.orders.push({
+                        orderType: 'Sell',
+                        uuid: data.result.uuid,
+                        price: this.currentPrice
+                    });
+
+                    this.lastOrderUuid = data.result.uuid;
+
+                    console.log('Sell order placed. uuid: ' + data.result.uuid);
+                } else {
+                    console.log('ERROR: Could not place Sell order: ', data);
                 }
-                this.profitCount++;
-            }  else {
-                if (currentProfit < this.largestLoss) {
-                    this.largestLoss = currentProfit;
-                }
-                this.lossCount++;
-            }
-            this.history = [];
-            this.average = 0;
+            });
+
         } else {
-            console.log("Cross-over occurred but minimum price (" + this.minimumSellPrice + ") not reached."); 
+            if (this.currentPrice > ((this.buyPrice * this.minimumProfit) + this.buyPrice)) {
+                this.balance = this.quantity * this.currentPrice;
+                this.sellCount++;
+                // Place sell
+                console.log('---------------------------------------------------------------------------------');            
+                console.log('====Cross-over occurred! Current price less than average price. Place sell.======');                
+                this.isOwned = false;
+                this.sellPrice = this.currentPrice;
+                if (currentProfit > 0) {
+                    if (currentProfit > this.largestProfit) {
+                        this.largestProfit = currentProfit;
+                    }
+                    this.profitCount++;
+                }  else {
+                    if (currentProfit < this.largestLoss) {
+                        this.largestLoss = currentProfit;
+                    }
+                    this.lossCount++;
+                }
+                this.history = [];
+                this.average = 0;
+            } else {
+                console.log("Cross-over occurred but minimum price (" + this.minimumSellPrice + ") not reached."); 
+            }
         }
     }
 
     
-    placeBuy() {
-        if (!this.startingBalance) {
-            this.balance = this.currentPrice * this.quantity;  // quantity is initialized to 10
-            this.startingBalance = this.balance;
-        } else {   
-            this.quantity = this.balance / this.currentPrice;        
-        }
+    placeBuyOrder() {
 
-        // Place buy?
-        console.log('==================================================================================================');
-        console.log('==============Cross-over occurred! Current price greater than average price. Place buy.===========');
-        this.isOwned = true;
-        this.buyPrice = this.currentPrice;
-        this.history = [];
-        this.average = 0;
-        this.minimumSellPrice = (this.buyPrice * this.minimumProfit) + this.buyPrice;
+        if (this.isRealMoney) {
+            this.executeBuy(this.market, this.quantity, this.currentPrice).then((data) => {
+                if (data.success) {
+                    this.orderPlaced = true;
+                    this.orders.push({
+                        orderType: 'Buy',
+                        uuid: data.result.uuid,
+                        price: this.currentPrice
+                    });
+
+                    this.lastOrderUuid = data.result.uuid;
+                    this.buyPrice = this.currentPrice;
+    
+                    console.log('Buy order placed. uuid: ' + data.result.uuid);
+                } else {
+                    console.log('ERROR: Could not place Buy order: ', data);
+                }
+            });
+        } else {
+            if (!this.startingBalance) {
+                this.balance = this.currentPrice * this.quantity;  // quantity is initialized to 10
+                this.startingBalance = this.balance;
+            } else {   
+                this.quantity = this.balance / this.currentPrice;        
+            }
+
+            // Place buy?
+            console.log('==================================================================================================');
+            console.log('==============Cross-over occurred! Current price greater than average price. Place buy.===========');
+            this.isOwned = true;
+            this.buyPrice = this.currentPrice;
+            this.history = [];
+            this.average = 0;
+            this.minimumSellPrice = (this.buyPrice * this.minimumProfit) + this.buyPrice;
+        }
     }
 
-    calculateProfit() {
+    calculatePercentReturn() {
         let profit = ((this.currentPrice - this.buyPrice) / this.buyPrice).toFixed(6);
         return profit;
     }
