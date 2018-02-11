@@ -18,11 +18,28 @@ class MovingAverageController extends BaseController {
         this.balance = 0;
         this.startingBalance = 0;  // Will be set once on initial purchase
 
-        this.history = [];
+        this.averages = {
+            fiveMinute: {
+                name: "5 minute",
+                history: [],
+                average: 0,
+                length: 24,  // 2 hours
+                interval: 15 * 1000
+            },
+            oneMinute: {
+                name: "1 minute",
+                history :[],
+                average: 0,
+                length: 25,  // Pulled this number out of my ass
+                interval: 5 * 1000
+            }
+        }
+
+        //this.history = [];
         this.currentPrice = 0;
-        this.average = 0;
-        this.averageLength = 10;  // Number of "closing" prices to collect for the average
-        this.interval = 5000;
+        // this.average = 0;
+        // this.averageLength = 10;  // Number of "closing" prices to collect for the average
+        // this.interval = 5000;
 
         this.profitHistory = [];
 
@@ -42,23 +59,32 @@ class MovingAverageController extends BaseController {
         /**
          * UNCOMMENT THIS LINE TO INIT TRADE WITH ABOVE SETTINGS
          */
-        this.startTimer(); 
+        this.startTimers(); 
     }
 
-    startTimer() {
-        this.timer = setInterval(this.tick.bind(this), this.interval);
+    startTimers() {
+        this.timers = [];
+
+        for (var average in this.averages) {
+            let tAvg = this.averages[average],
+                tTimer = setInterval(this.tick.bind(this, tAvg), tAvg.interval);
+
+            this.timers.push(tTimer);
+        }
     }
 
-    stopTimer() {
-        clearInterval(this.timer);
+    stopTimers() {
+        this.timers.forEach((aTimer) => {
+            clearInterval(aTimer);
+        });
     }
 
-    tick() {
+    tick(aMovingAverageObject) {
     // -------- Log --------------
         console.log(' ');
         console.log('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -');
         console.log('   Request number:        ' + this.requestNumber++);
-        console.log('   Time elapsed:          ' + Math.floor((this.requestNumber * this.interval) / MS_PER_MINUTE) + ' minutes');
+        console.log('   Time elapsed:          ' + Math.floor((this.requestNumber * aMovingAverageObject.interval) / MS_PER_MINUTE) + ' minutes');
         console.log('   Currency:              ' + this.market);
         console.log('   Starting Acount Value: ' + this.startingBalance + ' BTC');
         console.log('   Total Account Value:   ' + this.balance + ' BTC');
@@ -70,7 +96,7 @@ class MovingAverageController extends BaseController {
         console.log('   - - - - - - - - - - - - - - - - - - - - -');
         console.log('   Currency Owned:        ' + this.isOwned);
         console.log('   Current price:         ' + this.currentPrice);
-        console.log('   Average Price:         ' + this.average + '    (of past ' + Math.floor((this.interval * this.averageLength) / MS_PER_MINUTE) + ' minutes)');
+        console.log('   Average Price:         ' + aMovingAverageObject.average + '    (of past ' + Math.floor((aMovingAverageObject.interval * aMovingAverageObject.length) / MS_PER_MINUTE) + ' minutes)');
         if (this.isOwned) {
             console.log('   Buy price:             ' + this.buyPrice);
             console.log('   Minimum sell price:    ' + this.minimumSellPrice);
@@ -78,6 +104,10 @@ class MovingAverageController extends BaseController {
         }
         
     // ---------- Begin ----------
+        // Set a temporary variable to the object of the Moving Average we are working with
+        this.currentMA = aMovingAverageObject;
+        this.history = this.currentMA.history;
+        
         this.fetchCurrentPrice().then((data) => {
             if (data && data.result && data.result.Last) {
                 this.currentPrice = data.result.Last;
@@ -85,10 +115,10 @@ class MovingAverageController extends BaseController {
             }
             // Set value of this.average
             this.calculateAverage();
-
+            this.currentMA.average = this.average;
             if (this.average) {
                 this.checkAverageAgainstCurrentPrice();
-            } 
+            }
         });
     }
 
@@ -104,7 +134,7 @@ class MovingAverageController extends BaseController {
     /**
      * @description Sets this.average by calculating the average of the history array
      * @returns     void
-     * @sideffects  this.average
+     * @sideffects  this.average, this.history
      */
     calculateAverage() {
         let sum = 0;
@@ -112,7 +142,7 @@ class MovingAverageController extends BaseController {
         if (this.history.length > this.averageLength) {
             this.history.shift();
         } else {
-            console.log('Not enough historical data to calculate average. ' + this.history.length + '/' + this.averageLength);
+            console.log('Not enough historical data to calculate average. ' + this.history.length + '/' + this.currentMA.length);
             this.average = 0;
             return;
         }
@@ -145,15 +175,41 @@ class MovingAverageController extends BaseController {
         }
     }
 
+    /**
+     * @description Checks the averages against one another and places Sell/Buy if there is a cross-over
+     *              If not owned && 1 minute average crosses above the 5 minute average
+     *                  Buy
+     *              If owned && 1 minute average crosses below the 5 minute average
+     *                  Sell
+     */
+    checkAverages() {
+        if (this.isOwned) {
+            this.calculatePercentReturn();
+            if (this.averages[oneMinte] < this.averages[fiveMinute]) {
+                this.placeSellOrder();
+            } else {
+                console.log('Short term average is lower than long term average price. Waiting for cross-over.');                
+            }
+        } else {
+            if (this.averages[oneMinte] > this.averages[fiveMinute]) {
+                this.placeBuyOrder();
+            } else {
+                console.log('Currency not owned. Short term average is higher than long term average price. Waiting for cross-over.');
+            }
+        }
+    }
+
     placeSellOrder() {
         let currentProfit = this.calculatePercentReturn();
 
         if (this.isRealMoney) {
-            this.stopTimer();
+            this.orderPending = true;
+            this.stopTimers();
             this.OrderManager.placeSellAndWaitForFulfillment(this.market, this.quantity, this.currentPrice).then((data) => {
                 console.log('Sell order completely complete. Restarting Moving Average timer. Well done');
                 this.isOwned = false;
-                this.startTimer();
+                this.orderPending = false;
+                this.startTimers();
             });
         } else {
             if (this.currentPrice > ((this.buyPrice * this.minimumProfit) + this.buyPrice)) {
@@ -188,11 +244,13 @@ class MovingAverageController extends BaseController {
 
         if (this.isRealMoney) {
             // Pause until order is fulfilled then resume timer
-            this.stopTimer();
+            this.stopTimers();
+            this.orderPending = true;            
             this.OrderManager.placeBuyAndWaitForFulfillment(this.market, this.quantity, this.currentPrice).then((data) => {
                 console.log('Buy order completely complete. Restarting Moving Average timer. Well done');                
                 this.isOwned = true;
-                this.startTimer();
+                this.orderPending = false;
+                this.startTimers();
             });
         } else {
             if (!this.startingBalance) {
