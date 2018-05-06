@@ -9,7 +9,7 @@ class MovingAverageController extends BaseController {
 
         this.OrderManager = new OrderManager(this);
 
-        this.isRealMoney = true;
+        this.isRealMoney = false;
 
         this.market = 'BTC-XVG';
         this.isOwned = false;
@@ -59,7 +59,7 @@ class MovingAverageController extends BaseController {
         /**
          * UNCOMMENT THIS LINE TO INIT TRADE WITH ABOVE SETTINGS
          */
-        this.startTimers(); 
+        // this.startTimers(); 
     }
 
     startTimers() {

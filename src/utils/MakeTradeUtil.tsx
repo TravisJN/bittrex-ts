@@ -5,7 +5,6 @@ interface MarketOrderOptions {
     market: string;
     quantity: number;
     rate: number;
-    trailingStop: number;
 }
 
 class MakeTradeUtil {
@@ -17,13 +16,12 @@ class MakeTradeUtil {
 
    public buyLimit(aOptions: MarketOrderOptions): void {
         console.log('Buy Limit!', aOptions);
-        this.setTrailingStop(aOptions);
-        //this.mModel.fetchData('buyLimit', aOptions);
+        this.mModel.fetchData('buyLimit', aOptions);
    }
 
    public sellLimit(aOptions: MarketOrderOptions): void {
        console.log('Sell limit!', aOptions);
-        //this.mModel.fetchData('sellLimit', aOptions);
+        this.mModel.fetchData('sellLimit', aOptions);
    }
 
    private setTrailingStop(aOptions: MarketOrderOptions) {

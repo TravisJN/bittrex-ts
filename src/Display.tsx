@@ -23,7 +23,7 @@ export interface State {
     balances: Balance[];
 }
 
-class Display extends React.Component<Props, object>{
+class Display extends React.Component<Props, State>{
 
     public state: State = {
         balances: [],
@@ -88,7 +88,7 @@ class Display extends React.Component<Props, object>{
             <CurrentBTCPriceDisplay {...btcBalancesDisplayArgs} />
             <div className="main__main-container">
                 <BalancesDisplay {...priceDisplayArgs} />
-                <MakeTradeComponent {...makeTradeArgs}/>
+                <MakeTradeComponent {...makeTradeArgs} />
             </div>
         </div>
         )

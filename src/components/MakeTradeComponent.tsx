@@ -10,7 +10,6 @@ export interface State {
     market: string;
     quantity: number;
     rate: number;
-    trailingStop;
 }
 
 class MakeTradeComponent extends React.Component<Props, object>{
@@ -21,8 +20,7 @@ class MakeTradeComponent extends React.Component<Props, object>{
     public state: State = {
                             market: "",
                             quantity: 0,
-                            rate: 0,
-                            trailingStop: 0
+                            rate: 0
                         }
 
     constructor(props: Props) {
@@ -45,12 +43,12 @@ class MakeTradeComponent extends React.Component<Props, object>{
 
     private handleBuy(aEvent: React.FormEvent<HTMLFormElement>): void {
         aEvent.preventDefault();
-        this.mTradeUtil.buyLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate, trailingStop: this.state.trailingStop});
+        this.mTradeUtil.buyLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate});
     }
 
     private handleSell(aEvent: React.FormEvent<HTMLFormElement>): void {
         aEvent.preventDefault();
-        this.mTradeUtil.sellLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate, trailingStop: this.state.trailingStop});
+        this.mTradeUtil.sellLimit({market: this.state.market, quantity: this.state.quantity, rate: this.state.rate});
     }
 
     private handleChange(aEvent: React.FormEvent<HTMLFormElement>): void {
@@ -79,13 +77,7 @@ class MakeTradeComponent extends React.Component<Props, object>{
                             type="text" 
                             name="rate" 
                             value={this.state.rate} 
-                            onChange={this.handleChange.bind(this)} />
-                    <label htmlFor="trailing-stop">Trailing Stop (%)</label>                            
-                    <input  className="make-trade__input"
-                            type="text" 
-                            name="trailingStop" 
-                            value={this.state.trailingStop} 
-                            onChange={this.handleChange.bind(this)} />
+                            onChange={this.handleChange.bind(this)} />                       
                     <input  type="submit" 
                             value="Place Buy Order" 
                             onClick={this.handleBuy.bind(this)} />

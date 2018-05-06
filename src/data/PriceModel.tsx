@@ -211,10 +211,6 @@ class PriceModel {
     makeRequest(aUrl, aEndPoint) {
         console.log('Request sent: ', aUrl);
 
-        if (aEndPoint === 'buyLimit') {
-            console.log(aUrl);
-            return;
-        } 
         return fetch(aUrl, {  
             method: 'GET',
             headers: {
@@ -222,9 +218,9 @@ class PriceModel {
             }
         })
         .then((response) => {
-            // Don't edit this first then statement or it will fuck everything up
             return response.json();
         }).then((responseJson) => {
+            console.log(responseJson);
             return this.parseData(responseJson, aEndPoint);
         })
         .catch((error) => {
